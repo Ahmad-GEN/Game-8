@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: a53a387eb9ae84e7c9138d3996f69d5a
+timeCreated: 1510661534
+licenseType: Pro
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Arial Black
+  fontNames:
+  - Arial Black
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
+	
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="bootstrap-css.css" />
+
+    <script src="https://use.fontawesome.com/de58f08536.js"></script>
+	<script src="audiocontext-polyfill.js"></script>
+	<title>{{{ PRODUCT_NAME }}}</title>
+	<style>
+        body {
+            overflow: hidden;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .wrapper {
+            width: 100%;
+            text-align: center;
+        }
+
+        #loader {
+            margin: 0 auto;
+            position: relative;
+        }
+
+        #background {
+            width: 100%;
+            height: 100%;
+            <!-- position: absolute; -->
+            top: 0;
+            left: 0;
+			
+        }
+
+
+        #loading {
+            color: #91dd0c;
+            font-size: 40pt;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            text-align: center;
+            padding-top: 25%;
+
+        }
+
+        #progress {
+            border: solid 1px #91dd0c;
+            width: 20%;
+            height: 20px;
+            text-align: center;
+            margin: auto;
+            margin-top: 20px;
+        }
+
+        #progressFill {
+            background-color: #91dd0c;
+            width: 0;
+            height: 18px;
+
+        }
+
+
+        #BtnPrevious,
+        #BtnNext,
+        #BtnSelect,
+        #BtnInfo,
+        #BtnClose {
+
+            opacity: 0;
+
+        }
+
+        #cont {
+
+            position: fixed;
+            cursor: pointer;
+
+            bottom: 10px;
+
+            border: 2px;
+
+            padding-left: initial;
+        }
+    </style>
+    <!-- <link rel="shortcut icon" href="TemplateData/favicon.ico"> -->
+    <!-- <link rel="stylesheet" href="TemplateData/style.css"> -->
+  </head>
+  <body>
+  
+	<div class="wrapper">
+		<div id="loader">
+            <img id="background" src="imgs/splash-bg.png" />
+            <div id="loading">
+				<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Loading
+                <div id="progress">
+					<div id="progressFill">
+					</div>
+                </div>
+            </div>
+		</div>
+		
+		<div id="gameContainer" style="opacity: 0;">
+		
+		<canvas id="unity-canvas">
+		</canvas>
+		
+		</div>
+		
+	</div>
+	
+	<div id="cont" class="container" style="height:13%; width :100%">
+
+        <section class="color-pattern-1">
+
+            <button class="button button-1 button-1b" id="BtnPrevious" tabindex="0" role="button" aria-label="Previous">Previous</button>
+
+            <button class="button button-1 button-1b" id="BtnSelect" tabindex="0" role="button" aria-label="Select">Select</button>
+
+            <button class="button button-1 button-1b" id="BtnNext" tabindex="0" role="button" aria-label="Next">Next</button>
+
+            <button class="button button-1 button-1b" id="BtnInfo" tabindex="0" role="button" aria-label="Info">Info</button>
+
+            <button class="button button-1 button-1b" id="BtnClose" tabindex="0" role="button" aria-label="Close">Close</button>
+            
+<!--        <button class="button button-1 button-1b" id="" type = "button" onclick = "TestAccessibiltiy()"  role="button" >TEST</button>-->
+        </section>
+
+    </div>
+    <script>
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      var config = {
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#if MEMORY_FILENAME
+        memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
+      };
+
+      var container = document.querySelector("#wrapper");
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#loading");
+      var progressBarFull = document.querySelector("#progressFill");
+	  
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        config.devicePixelRatio = 1;
+        } else {
+        canvas.style.width = "{{{ WIDTH }}}px";
+        canvas.style.height = "{{{ HEIGHT }}}px";
+      }
+	  
+      loadingBar.style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+	  var gameInstance;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+		
+          progressBarFull.style.width = 100 * progress + "%";
+		  
+        }).then((unityInstance) => {
+		
+		  gameInstance=unityInstance;
+          loadingBar.style.display = "none";
+          
+        }).catch((message) => {
+          alert(message);
+        });
+	
+      };
+	  	 $(window).resize(function () {
+            setGameSize();
+        });
+		
+		
+		window.onload=getQueryParameters;
+		
+function OnGameStarted() {
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)|| (/android/i.test(navigator.userAgent)))
+			{
+                gameInstance.SendMessage('ExternalHandler', 'DisableFullScreen');
+            }
+            hideLoader();
+			getQueryParameters();
+			
+			
+            setGameSize();
+        }
+		
+		function onProgressChanged(r, p) {
+            $("#progressFill").css({
+                width: (p * 100).toString() + '%'
+            });
+        }
+		
+function hideLoader() {
+            $("#loader").hide();
+            $('#gameContainer').css({
+                opacity: 1,
+                'background-color': 'transparent'
+            });
+			 
+        }
+		
+		function getQueryParameters() 
+	   {
+            var query = window.location.href.split('?')[1];
+		//query won't be set if ? isn't in the URL
+            if (!query) 
+			{
+				ToggleAccessibility(false);
+                return {};
+            }
+
+            if (query.split('=')[1] == "yes")
+			{
+				if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (/android/i.test(navigator.userAgent))) 
+				{
+					//EnableButtonsOnMobileDevices();
+					ToggleAccessibility(true);
+				}
+				else
+				{
+					ToggleAccessibility(false);
+				}
+				//ToggleAccessibility(true);
+				if(gameInstance!=null)
+				{
+					setTimeout(function(){gameInstance.SendMessage('ExternalHandler', 'EnableAccessibilty', 'true');},10);
+					setTimeout(function(){gameInstance.SendMessage('ExternalHandler', 'SetKey', '195e6eda29f645c18ca1e1645d985042');}, 24)
+				}
+			} 
+			else if (query.split('=')[1] == "no") 
+			{ 
+
+                //disable accessbilty
+				if(gameInstance!=null)
+				{
+					setTimeout(function(){gameInstance.SendMessage('ExternalHandler', 'EnableAccessibilty', 'false');},10);
+				}
+               // DisableAccessibility();
+			   ToggleAccessibility(false);
+            }
+		}
+
+	  function ToggleAccessibility(state) {
+            let isIPADOS = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var isMobile = isIPADOS  || (/android/i.test(navigator.userAgent));
+			
+			if (state) 
+			{
+                
+                ToggleAccessibilityButtons(isMobile);
+				if(gameInstance!=null)
+				{
+					gameInstance.SendMessage('ExternalHandler', 'EnableAccessibilty', 'true');
+				}
+            }
+            else 
+			{
+                ToggleAccessibilityButtons(false);
+				if(gameInstance!=null)
+				{
+					gameInstance.SendMessage('ExternalHandler', 'EnableAccessibilty', 'false');
+				}
+            }
+        }
+	  function ToggleAccessibilityButtons(showButtons) 
+		{
+            if (showButtons == true) {
+			console.log("Enabling Buttons");
+                var x = document.getElementById("cont");
+                x.style.display = "block";
+                x.style.width = '100%';
+                x.style.height = '13%';
+                ButtonsEnabled = true;
+                EnableButtonsOnMobileDevices();
+            }
+            else {
+			console.log("Disabling Buttons");
+                var x = document.getElementById("cont");
+                x.style.display = "none";
+                x.style.width = '0%';
+                x.style.height = '0%';
+                ButtonsEnabled = false;
+            }
+        }
+		function EnableButtonsOnMobileDevices() {
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (/android/i.test(navigator.userAgent))) {
+
+
+                $('#BtnClose').css({
+                    opacity: 1
+                });
+
+                $('#BtnPrevious').css({
+                    opacity: 1
+                });
+
+                $('#BtnNext').css({
+                    opacity: 1
+                });
+
+                $('#BtnSelect').css({
+                    opacity: 1
+                });
+
+                $('#BtnInfo').css({
+                    opacity: 1
+                });
+
+            }
+        }
+		 // this funciton check if the game is runnig in mobile device(accessinilty mode) then it will add a little delay so first the user can listen device build in soun
+        // amd after that user can hear game sound
+        function NavigatePrevious() {
+
+
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+
+                setTimeout(Navigate('swipeDown'), 1500);
+
+            } else {
+                Navigate('swipeDown');
+
+            }
+
+        }
+
+        function PressSelect() {
+
+
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+
+                setTimeout(Navigate('select'), 1500);
+
+            } else {
+                Navigate('select');
+
+            }
+
+        }
+
+        function NavigateNext() {
+
+
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+
+                setTimeout(Navigate('swipeUp'), 1500);
+
+            } else {
+                Navigate('swipeUp');
+
+            }
+
+        }
+        
+        
+        function TestAccessibiltiy() {
+
+            gameInstance.SendMessage('AccessibilityManager','TEST');
+            
+
+        }
+
+        function Close() {
+
+
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+
+                setTimeout(Navigate('Close'), 1500);
+
+            } else {
+                Navigate('Close');
+
+            }
+
+        }
+
+        function Info() {
+
+
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+
+                setTimeout(Navigate('Info'), 1500);
+
+            } else {
+                Navigate('Info');
+
+            }
+}
+
+		 document.addEventListener('DOMContentLoaded', function () {
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (/android/i.test(navigator.userAgent))) {
+
+                document.getElementById('BtnPrevious').addEventListener('touchstart', NavigatePrevious);
+                document.getElementById('BtnNext').addEventListener('touchstart', NavigateNext);
+                document.getElementById('BtnSelect').addEventListener('touchstart', PressSelect);
+                document.getElementById('BtnInfo').addEventListener('touchstart', Info);
+                document.getElementById('BtnClose').addEventListener('touchstart', Close);
+
+            } else {
+
+
+                document.getElementById('BtnPrevious').addEventListener('click', NavigatePrevious);
+                document.getElementById('BtnNext').addEventListener('click', NavigateNext);
+                document.getElementById('BtnSelect').addEventListener('click', PressSelect);
+                document.getElementById('BtnInfo').addEventListener('click', Info);
+                document.getElementById('BtnClose').addEventListener('click', Close);
+
+            }
+        });
+		
+		function setGameSize() {
+            document.body.style.overflow = "hidden";
+            var maxWidth = $(window).width() - 20;
+            var maxHeight = $(window).height() - 20;
+            document.body.style.overflow = "";
+
+            var ratio = 1.77;
+
+            var height = maxWidth / ratio;
+            var width = maxHeight * ratio;
+
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * ratio;
+            }
+
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / ratio;
+            }
+
+            var canvas = $("canvas");
+
+            canvas.width(width);
+            canvas.height(height);
+
+            var loader = $("#loader");
+
+            loader.width(width);
+            loader.height(height);
+
+        }
+	  
+        function EnbaleAccessibility() {
+            gameInstance.SendMessage('ExternalHandler', 'EnableAccessibilty', 'true');
+        }
+
+        function DisableAccessibility() {
+            gameInstance.SendMessage('ExternalHandler', 'EnableAccessibilty', 'false');
+        }
+
+
+        function Navigate(direction) {
+
+            gameInstance.SendMessage('AccessibilityManager', direction);
+
+        }
+
+        function OnGameStopped() {
+            window.location.href = document.referrer;
+		   }
+
+        function ExitFullScreen(elem) {
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (/android/i.test(navigator.userAgent))) {} else {
+                elem = elem || document.documentElement;
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>
